@@ -108,11 +108,28 @@ export type WorldPreview = {
   grid: MapCell[][];
   spawnBiome: Biome;
   biomeCounts: { biome: Biome; pct: number }[];
-  structures: { name: string; distance: number; direction: string }[];
+  structures: { name: string; distance: number; direction: string; icon: string; pinX: number; pinY: number }[];
   stats: { label: string; value: string }[];
 };
 
 const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
+const STRUCTURE_ICONS: Record<string, string> = {
+  Village: "V",
+  "Pillager Outpost": "P",
+  "Desert Temple": "T",
+  "Jungle Temple": "T",
+  "Woodland Mansion": "M",
+  "Ruined Portal": "R",
+  Shipwreck: "S",
+  "Ocean Monument": "O",
+  "Ancient City": "A",
+  Stronghold: "E",
+  "Witch Hut": "W",
+  Igloo: "I",
+  "Buried Treasure": "$",
+  "Trail Ruins": "U",
+};
 
 function pickBiome(h: number, temp: number, moist: number): Biome {
   const get = (k: string) => BIOMES.find((b) => b.key === k)!;
@@ -165,11 +182,24 @@ export function generateWorld(seed: string, size = 48): WorldPreview {
     .slice(0, 6);
 
   const shuffled = [...STRUCTURES].sort(() => rand() - 0.5);
-  const structures = shuffled.slice(0, 6).map((name) => ({
-    name,
-    distance: Math.round(80 + rand() * 2400),
-    direction: DIRS[Math.floor(rand() * DIRS.length)],
-  })).sort((a, b) => a.distance - b.distance);
+  const structures = shuffled.slice(0, 6).map((name) => {
+    const distance = Math.round(80 + rand() * 2400);
+    const dirIdx = Math.floor(rand() * DIRS.length);
+    const dir = DIRS[dirIdx];
+    // angle from N clockwise (N=top)
+    const angle = (dirIdx * 45 - 90) * (Math.PI / 180);
+    // map the spawn area covers ~1500 blocks radius → 0..1 fraction of map
+    const frac = Math.min(distance / 1500, 0.92);
+    return {
+      name,
+      distance,
+      direction: dir,
+      icon: STRUCTURE_ICONS[name] ?? "·",
+      // normalized -1..1 from center, scaled into cell space by the renderer
+      pinX: Math.cos(angle) * frac,
+      pinY: Math.sin(angle) * frac,
+    };
+  }).sort((a, b) => a.distance - b.distance);
 
   const seaLevel = 62 + Math.round(rand() * 2);
   const stats = [

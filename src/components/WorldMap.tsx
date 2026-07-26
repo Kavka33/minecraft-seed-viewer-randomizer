@@ -15,29 +15,64 @@ const WorldMap = ({ world }: Props) => {
     if (!ctx) return;
 
     const size = world.grid.length;
-    canvas.width = size * CELL;
-    canvas.height = size * CELL;
+    const dim = size * CELL;
+    canvas.width = dim;
+    canvas.height = dim;
 
+    // biome tiles
     world.grid.forEach((row, y) => {
       row.forEach((cell, x) => {
-        const shade = 0.72 + cell.height * 0.55;
         ctx.fillStyle = (x + y) % 2 === 0 ? cell.biome.color : cell.biome.alt;
-        ctx.globalAlpha = 1;
         ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        const shade = 0.72 + cell.height * 0.55;
         ctx.fillStyle = shade > 1 ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.18)";
         ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
       });
     });
 
-    // spawn marker
-    const mid = Math.floor(size / 2) * CELL;
-    ctx.globalAlpha = 1;
+    const mid = dim / 2;
+
+    // structure pins
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    world.structures.forEach((s) => {
+      const px = mid + s.pinX * (dim / 2 - 14);
+      const py = mid + s.pinY * (dim / 2 - 14);
+      const R = 7;
+
+      // connection line to spawn
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(mid, mid);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // pin disc + outline
+      ctx.beginPath();
+      ctx.arc(px, py, R, 0, Math.PI * 2);
+      ctx.fillStyle = "#111418";
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#e0a63c";
+      ctx.stroke();
+
+      // letter
+      ctx.fillStyle = "#fbbf24";
+      ctx.font = "bold 9px 'JetBrains Mono', monospace";
+      ctx.fillText(s.icon, px, py + 0.5);
+    });
+
+    // spawn marker (drawn last so it sits on top)
+    const sm = Math.floor(size / 2) * CELL;
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 3;
-    ctx.strokeRect(mid - CELL, mid - CELL, CELL * 3, CELL * 3);
+    ctx.strokeRect(sm - CELL, sm - CELL, CELL * 3, CELL * 3);
     ctx.strokeStyle = "#111418";
     ctx.lineWidth = 1;
-    ctx.strokeRect(mid - CELL - 2, mid - CELL - 2, CELL * 3 + 4, CELL * 3 + 4);
+    ctx.strokeRect(sm - CELL - 2, sm - CELL - 2, CELL * 3 + 4, CELL * 3 + 4);
   }, [world]);
 
   return (
@@ -52,7 +87,7 @@ const WorldMap = ({ world }: Props) => {
         style={{ imageRendering: "pixelated" }}
       />
       <p className="mt-3 text-xs text-muted-foreground">
-        White square marks world spawn · colors show biome, brightness shows elevation
+        White square = spawn · gold pins = structures (dashed line points back to spawn)
       </p>
     </div>
   );
