@@ -131,6 +131,8 @@ export type WorldPreview = {
   stats: { label: string; value: string }[];
 };
 
+const REGION = 512;
+
 const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
 const STRUCTURE_ICONS: Record<string, string> = {
@@ -149,6 +151,35 @@ const STRUCTURE_ICONS: Record<string, string> = {
   "Buried Treasure": "$",
   "Trail Ruins": "U",
 };
+
+/** Collect all structures within a world-rect [minX,minZ]-[maxX,maxZ]. Deterministic per seed. */
+export function structuresInRect(
+  seed: number,
+  minX: number,
+  minZ: number,
+  maxX: number,
+  maxZ: number
+): { name: string; icon: string; x: number; z: number }[] {
+  const out: { name: string; icon: string; x: number; z: number }[] = [];
+  const r0 = Math.floor(minX / REGION);
+  const r1 = Math.floor(maxX / REGION);
+  const c0 = Math.floor(minZ / REGION);
+  const c1 = Math.floor(maxZ / REGION);
+  for (let rx = r0; rx <= r1; rx++) {
+    for (let rz = c0; rz <= c1; rz++) {
+      // 0-3 structures per region, deterministic
+      const r = mulberry32(Math.imul(rx, 73856093) ^ Math.imul(rz, 19349663) ^ Math.imul(seed, 83492791));
+      const count = Math.floor(r() * 3);
+      for (let i = 0; i < count; i++) {
+        const name = STRUCTURES[Math.floor(r() * STRUCTURES.length)];
+        const x = rx * REGION + Math.floor(r() * REGION);
+        const z = rz * REGION + Math.floor(r() * REGION);
+        out.push({ name, icon: STRUCTURE_ICONS[name] ?? "·", x, z });
+      }
+    }
+  }
+  return out;
+}
 
 function pickBiome(h: number, temp: number, moist: number): Biome {
   const get = (k: string) => BIOMES.find((b) => b.key === k)!;
@@ -196,23 +227,18 @@ export function generateWorld(seed: string, size = 48): WorldPreview {
     .sort((a, b) => b.pct - a.pct)
     .slice(0, 6);
 
-  const shuffled = [...STRUCTURES].sort(() => rand() - 0.5);
-  const structures = shuffled.slice(0, 6).map((name) => {
-    const distance = Math.round(80 + rand() * 2400);
-    const dirIdx = Math.floor(rand() * DIRS.length);
-    const dir = DIRS[dirIdx];
-    // world coords: N = -Z, E = +X. angle measured from N clockwise.
-    const x = Math.round(Math.sin(dirIdx * 45 * (Math.PI / 180)) * distance);
-    const z = -Math.round(Math.cos(dirIdx * 45 * (Math.PI / 180)) * distance);
-    return {
-      name,
-      distance,
-      direction: dir,
-      icon: STRUCTURE_ICONS[name] ?? "·",
-      x,
-      z,
-    };
-  }).sort((a, b) => a.distance - b.distance);
+  // structures near spawn come from the world-wide region system (consistent everywhere)
+  const near = structuresInRect(s, -1500, -1500, 1500, 1500)
+    .map((st) => {
+      const distance = Math.round(Math.sqrt(st.x * st.x + st.z * st.z));
+      const ang = Math.atan2(st.x, -st.z); // N = -Z
+      const deg = (ang * 180) / Math.PI;
+      const idx = (Math.round(((deg + 360) % 360) / 45) % 8);
+      return { ...st, distance, direction: DIRS[idx] };
+    })
+    .sort((a, b) => a.distance - b.distance);
+  // show closest 6 in the sidebar
+  const structures = near.slice(0, 6);
 
   const seaLevel = 62 + Math.round(rand() * 2);
   const stats = [

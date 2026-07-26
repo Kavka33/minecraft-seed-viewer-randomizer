@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Crosshair, Minus, Plus } from "lucide-react";
-import { BLOCKS_PER_CELL, sampleCell, type WorldPreview } from "@/lib/seed-engine";
+import { BLOCKS_PER_CELL, sampleCell, structuresInRect, type WorldPreview } from "@/lib/seed-engine";
 
 type Props = { world: WorldPreview };
 
@@ -84,21 +84,30 @@ const WorldMap = ({ world }: Props) => {
       }
     }
 
-    // structure pins
+    // structure pins — query the whole visible area so they appear anywhere you pan
+    const tl = toWorld(-10, -10);
+    const br = toWorld(VIEW + 10, VIEW + 10);
+    const visible = structuresInRect(world.seedNumber, tl.x, tl.y, br.x, br.y);
+    const spawnPx = toPx(0, 0);
+
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const R = Math.max(6, 7 * Math.sqrt(zoom));
-    world.structures.forEach((s) => {
+    const R = Math.max(5, 7 * Math.sqrt(zoom));
+    visible.forEach((s) => {
       const p = toPx(s.x, s.z);
-      const sp = toPx(0, 0);
-      ctx.strokeStyle = "rgba(255,255,255,0.3)";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(sp.x, sp.y);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
+
+      // connector to spawn only when reasonably close
+      const distFromSpawn = Math.hypot(s.x, s.z);
+      if (distFromSpawn < 1600) {
+        ctx.strokeStyle = "rgba(255,255,255,0.2)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(spawnPx.x, spawnPx.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
