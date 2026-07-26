@@ -57,7 +57,8 @@ const WorldMap = ({ world }: Props) => {
     canvas.width = VIEW * dpr;
     canvas.height = VIEW * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     const cell = BLOCKS_PER_CELL * zoom; // px per cell
     const topLeft = toWorld(0, 0);
@@ -72,11 +73,14 @@ const WorldMap = ({ world }: Props) => {
         const wz = (startRow + r) * BLOCKS_PER_CELL;
         const data = sampleCell(world.seedNumber, wx, wz);
         const p = toPx(wx, wz);
-        ctx.fillStyle = (startCol + c + startRow + r) % 2 === 0 ? data.biome.color : data.biome.alt;
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(cell) + 1, Math.ceil(cell) + 1);
+        const w = Math.ceil(cell) + 1;
+        ctx.fillStyle = data.biome.color;
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), w, w);
         const shade = 0.72 + data.height * 0.55;
-        ctx.fillStyle = shade > 1 ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.18)";
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(cell) + 1, Math.ceil(cell) + 1);
+        ctx.fillStyle = shade > 1
+          ? `rgba(255,255,255,${Math.min(0.2, (shade - 1) * 0.6)})`
+          : `rgba(0,0,0,${(1 - shade) * 0.35})`;
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), w, w);
       }
     }
 
@@ -203,8 +207,8 @@ const WorldMap = ({ world }: Props) => {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
-          className="pixelated block cursor-grab touch-none active:cursor-grabbing"
-          style={{ width: VIEW, height: VIEW, maxWidth: "100%", imageRendering: "pixelated" }}
+          className="block cursor-grab touch-none active:cursor-grabbing"
+          style={{ width: VIEW, height: VIEW, maxWidth: "100%" }}
         />
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
