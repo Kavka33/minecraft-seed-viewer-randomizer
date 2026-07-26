@@ -25,17 +25,25 @@ const StructureList = ({ world }: { world: WorldPreview }) => (
     </h2>
     <ul className="divide-y divide-border/70">
       {world.structures.map((s) => (
-        <li key={s.name} className="flex items-center justify-between py-2.5 text-sm">
-          <span className="flex items-center gap-2">
+        <li key={s.name} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+          <span className="flex min-w-0 items-center gap-2">
             <span aria-hidden>{ICON[s.name] ?? "📍"}</span>
-            {s.name}
+            <span className="truncate">{s.name}</span>
           </span>
-          <span className="font-mono text-xs text-muted-foreground">
-            {s.distance} blocks <span className="text-gold">{s.direction}</span>
+          <span className="shrink-0 text-right font-mono text-xs">
+            <span className="text-foreground">
+              {s.x}, {s.z}
+            </span>
+            <span className="ml-2 text-muted-foreground">
+              {s.distance} bl <span className="text-gold">{s.direction}</span>
+            </span>
           </span>
         </li>
       ))}
     </ul>
+    <p className="mt-2 font-mono text-[10px] text-muted-foreground">
+      Format: X, Z · distance from spawn (0, 0)
+    </p>
   </div>
 );
 

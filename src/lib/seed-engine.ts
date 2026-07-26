@@ -108,7 +108,7 @@ export type WorldPreview = {
   grid: MapCell[][];
   spawnBiome: Biome;
   biomeCounts: { biome: Biome; pct: number }[];
-  structures: { name: string; distance: number; direction: string; icon: string; pinX: number; pinY: number }[];
+  structures: { name: string; distance: number; direction: string; icon: string; pinX: number; pinY: number; x: number; z: number }[];
   stats: { label: string; value: string }[];
 };
 
@@ -190,6 +190,9 @@ export function generateWorld(seed: string, size = 48): WorldPreview {
     const angle = (dirIdx * 45 - 90) * (Math.PI / 180);
     // map the spawn area covers ~1500 blocks radius → 0..1 fraction of map
     const frac = Math.min(distance / 1500, 0.92);
+    // world coords: N = -Z, E = +X. angle measured from N clockwise.
+    const x = Math.round(Math.sin(dirIdx * 45 * (Math.PI / 180)) * distance);
+    const z = -Math.round(Math.cos(dirIdx * 45 * (Math.PI / 180)) * distance);
     return {
       name,
       distance,
@@ -198,6 +201,8 @@ export function generateWorld(seed: string, size = 48): WorldPreview {
       // normalized -1..1 from center, scaled into cell space by the renderer
       pinX: Math.cos(angle) * frac,
       pinY: Math.sin(angle) * frac,
+      x,
+      z,
     };
   }).sort((a, b) => a.distance - b.distance);
 
