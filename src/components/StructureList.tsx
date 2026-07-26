@@ -24,8 +24,8 @@ const StructureList = ({ world }: { world: WorldPreview }) => (
       <Compass size={14} /> Nearby structures
     </h2>
     <ul className="divide-y divide-border/70">
-      {world.structures.map((s) => (
-        <li key={s.name} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+      {world.structures.map((s, i) => (
+        <li key={`${s.name}-${s.x}-${s.z}-${i}`} className="flex items-center justify-between gap-3 py-2.5 text-sm">
           <span className="flex min-w-0 items-center gap-2">
             <span aria-hidden>{ICON[s.name] ?? "📍"}</span>
             <span className="truncate">{s.name}</span>

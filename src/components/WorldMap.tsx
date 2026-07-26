@@ -92,7 +92,9 @@ const WorldMap = ({ world }: Props) => {
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const R = Math.max(5, 7 * Math.sqrt(zoom));
+    const R = Math.max(6, 7 * Math.sqrt(zoom));
+    const labelFont = Math.max(9, 8.5 * Math.sqrt(zoom));
+    const showLabel = zoom >= 0.6;
     visible.forEach((s) => {
       const p = toPx(s.x, s.z);
 
@@ -120,6 +122,34 @@ const WorldMap = ({ world }: Props) => {
       ctx.fillStyle = "#fbbf24";
       ctx.font = `bold ${Math.max(9, 9 * Math.sqrt(zoom))}px 'JetBrains Mono', monospace`;
       ctx.fillText(s.icon, p.x, p.y + 0.5);
+
+      // icon name + coordinate label below the pin
+      if (showLabel) {
+        const label = s.name;
+        const coord = `${s.x}, ${s.z}`;
+        ctx.font = `600 ${labelFont}px 'Outfit', sans-serif`;
+        const labelW = ctx.measureText(label).width;
+        const padX = 4;
+        const boxW = Math.max(labelW, ctx.measureText(coord).width) + padX * 2;
+        const boxH = labelFont * 2.5;
+        const boxX = p.x - boxW / 2;
+        const boxY = p.y + R + 4;
+
+        ctx.fillStyle = "rgba(17,20,24,0.88)";
+        ctx.strokeStyle = "rgba(224,166,60,0.5)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#fbbf24";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, p.x, boxY + labelFont * 0.7);
+        ctx.fillStyle = "#9ca3af";
+        ctx.font = `${labelFont}px 'JetBrains Mono', monospace`;
+        ctx.fillText(coord, p.x, boxY + labelFont * 1.7);
+      }
     });
 
     // spawn marker
